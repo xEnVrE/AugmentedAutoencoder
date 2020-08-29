@@ -7,6 +7,7 @@ import glob
 import os
 import progressbar
 import cv2
+from auto_pose.renderer import renderer
 
 from .pysixd_stuff import transform
 from .pysixd_stuff import view_sampler
@@ -35,6 +36,13 @@ class Dataset(object):
         if np.float(eval(self._kw['realistic_occlusion'])):
             self.random_syn_masks
 
+        # initialize renderer
+        render_dims = eval(self._kw['render_dims'])
+        K = eval(self._kw['k'])
+        K = np.array(K).reshape(3,3)
+        clip_near = float(kw['clip_near']) / 1000.0
+        clip_far = float(kw['clip_far']) / 1000.0
+        self.renderer = renderer.Renderer(kw['model_path'], render_dims[0], render_dims[1], K[0, 0], K[1, 1], K[0, 2], K[1, 2], clip_near, clip_far)
 
     @lazy_property
     def viewsphere_for_embedding(self):
@@ -56,28 +64,6 @@ class Dataset(object):
                 Rs[i,:,:] = rot_z.dot(view['R'])
                 i += 1
         return Rs
-
-    @lazy_property
-    def renderer(self):
-        from auto_pose.meshrenderer import meshrenderer, meshrenderer_phong
-        if self._kw['model'] == 'cad':
-            renderer = meshrenderer.Renderer(
-               [self._kw['model_path']],
-               int(self._kw['antialiasing']),
-               self.dataset_path,
-               float(self._kw['vertex_scale'])
-            )
-        elif self._kw['model'] == 'reconst':
-            renderer = meshrenderer_phong.Renderer(
-               [self._kw['model_path']],
-               int(self._kw['antialiasing']),
-               self.dataset_path,
-               float(self._kw['vertex_scale'])
-            )
-        else:
-            'Error: neither cad nor reconst in model path!'
-            exit()
-        return renderer
 
     def get_training_images(self, dataset_path, args):
         current_config_hash = hashlib.md5((str(args.items('Dataset')+args.items('Paths'))).encode('utf-8')).hexdigest()
@@ -228,7 +214,7 @@ class Dataset(object):
         max_rel_offset = float(kw['max_rel_offset'])
         t = np.array([0, 0, float(kw['radius'])])
 
-        widgets = ['Training: ', progressbar.Percentage(),
+        widgets = ['Train images rendering: ', progressbar.Percentage(),
              ' ', progressbar.Bar(),
              ' ', progressbar.Counter(), ' / %s' % self.noof_training_imgs,
              ' ', progressbar.ETA(), ' ']
@@ -240,40 +226,17 @@ class Dataset(object):
 
             # print '%s/%s' % (i,self.noof_training_imgs)
             # start_time = time.time()
+            z = - float(kw['radius']) / 1000.0
             R = transform.random_rotation_matrix()[:3,:3]
-            bgr_x, depth_x = self.renderer.render(
-                obj_id=0,
-                W=render_dims[0],
-                H=render_dims[1],
-                K=K.copy(),
-                R=R,
-                t=t,
-                near=clip_near,
-                far=clip_far,
-                random_light=True
-            )
-            bgr_y, depth_y = self.renderer.render(
-                obj_id=0,
-                W=render_dims[0],
-                H=render_dims[1],
-                K=K.copy(),
-                R=R,
-                t=t,
-                near=clip_near,
-                far=clip_far,
-                random_light=False
-            )
-            # render_time = time.time() - start_time
-            # cv2.imshow('bgr_x',bgr_x)
-            # cv2.imshow('bgr_y',bgr_y)
-            # cv2.waitKey(0)
+            bgr_x, depth_x = self.renderer.render(R, z, random_light = True)
+            bgr_y, depth_y = self.renderer.render(R, z, random_light = False)
 
             ys, xs = np.nonzero(depth_x > 0)
 
             try:
                 obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
             except ValueError as e:
-                print('Object in Rendering not visible. Have you scaled the vertices to mm?')
+                print('Object in Rendering not visible.')
                 break
 
 
@@ -454,7 +417,6 @@ class Dataset(object):
         return np.invert(new_masks)
 
     def batch(self, batch_size):
-
         # batch_x = np.empty( (batch_size,) + self.shape, dtype=np.uint8 )
         # batch_y = np.empty( (batch_size,) + self.shape, dtype=np.uint8 )
 

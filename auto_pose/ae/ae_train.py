@@ -79,13 +79,9 @@ def main():
 
     num_iter = args.getint('Training', 'NUM_ITER') if not debug_mode else 100000
     save_interval = args.getint('Training', 'SAVE_INTERVAL')
-    model_type = args.get('Dataset', 'MODEL')
 
-    if model_type=='dsprites':
-        dataset.get_sprite_training_images(args)
-    else:
-        dataset.get_training_images(dataset_path, args)
-        dataset.load_bg_images(dataset_path)
+    dataset.get_training_images(dataset_path, args)
+    dataset.load_bg_images(dataset_path)
 
     if generate_data:
         print('finished generating synthetic training data for ' + experiment_name)
@@ -115,11 +111,12 @@ def main():
 
 
         if not debug_mode:
-            print('Training with %s model' % args.get('Dataset','MODEL'), os.path.basename(args.get('Paths','MODEL_PATH')))
             bar.start()
 
+        print("Training starts...")
         queue.start(sess)
         for i in range(ae.global_step.eval(), num_iter):
+            print("Iteration " + str(i) + " / " + str(num_iter))
             if not debug_mode:
                 sess.run(train_op)
                 if i % 10 == 0:
@@ -130,6 +127,7 @@ def main():
                 if (i+1) % save_interval == 0:
                     saver.save(sess, checkpoint_file, global_step=ae.global_step)
 
+                if (i+1) % 100 == 0:
                     this_x, this_y = sess.run([queue.x, queue.y])
                     reconstr_train = sess.run(decoder.x,feed_dict={queue.x:this_x})
                     train_imgs = np.hstack(( u.tiles(this_x, 4, 4), u.tiles(reconstr_train, 4,4),u.tiles(this_y, 4, 4)))
