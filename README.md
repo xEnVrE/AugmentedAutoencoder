@@ -43,35 +43,21 @@ Duration depending on Configuration and Hardware: ~3h per Object
 
 ## Requirements: Software
 
-Linux, Python 2.7 / Python 3 (experimental)
+Tested w/ Python 3 + CUDA 10.0 + Tensorflow 1.15.
 
-GLFW for OpenGL: 
-```bash
-sudo apt-get install libglfw3-dev libglfw3  
+In order to install dependencies please run
+
 ```
-Assimp: 
-```bash
-sudo apt-get install libassimp-dev  
+pip install -r requirements.txt
 ```
 
-Tensorflow >= 1.6  
-OpenCV >= 3.1
+### Rendering
+We use Pyrender + EGL for object rendering. Pyrender is listed within the `requirements.txt` file and gets installed using the command above, however you might want to read [this](https://pyrender.readthedocs.io/en/latest/install/index.html) for more information on EGL support.
 
-```bash
-pip install --user --pre --upgrade PyOpenGL PyOpenGL_accelerate
-pip install --user cython
-pip install --user cyglfw3
-pip install --user pyassimp==3.3
-pip install --user imgaug
-pip install --user progressbar
-```
-
-### Headless Rendering
-Please note that we use the GLFW context as default which does not support headless rendering. To allow for both, onscreen rendering & headless rendering on a remote server, set the context to EGL: 
-```
-export PYOPENGL_PLATFORM='egl'
-```
-In order to make the EGL context work, you might need to change PyOpenGL like [here](https://github.com/mcfletch/pyopengl/issues/27)
+Notes:
+- please make sure that the mesh vertices are expressed in meters
+- meshes with textures are supported
+- headless rendering is supported
 
 ## Preparatory Steps
 
