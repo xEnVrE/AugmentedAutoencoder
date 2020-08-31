@@ -37,9 +37,9 @@ We propose a real-time RGB-based pipeline for object detection and 6D pose estim
 
 ## Requirements: Hardware
 ### For Training
-Nvidia GPU with >4GB memory (or adjust the batch size)  
-RAM >8GB  
-Duration depending on Configuration and Hardware: ~3h per Object
+NVIDIA GPU with > 4GB memory (or adjust the batch size)  
+RAM > 8GB  
+Duration depending on Configuration and Hardware: e.g. ~3h per Object on a NVIDIA P100 GPU
 
 ## Requirements: Software
 
