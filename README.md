@@ -200,8 +200,6 @@ MODEL_PATH: /path/to/my_3d_model.ply
 BACKGROUND_IMAGES_GLOB: /path/to/VOCdevkit/VOC2012/JPEGImages/*.jpg
 
 [Dataset]
-#cad or reconst (with texture)
-MODEL: reconst
 # Height of the AE input layer
 H: 128
 # Width of the AE input layer
