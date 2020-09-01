@@ -42,7 +42,7 @@ class Dataset(object):
         K = np.array(K).reshape(3,3)
         clip_near = float(kw['clip_near']) / 1000.0
         clip_far = float(kw['clip_far']) / 1000.0
-        self.renderer = renderer.Renderer(kw['model_path'], render_dims[0], render_dims[1], K[0, 0], K[1, 1], K[0, 2], K[1, 2], clip_near, clip_far)
+        self.renderer = renderer.Renderer(kw['models_path'], kw['model_file'], render_dims[0], render_dims[1], K[0, 0], K[1, 1], K[0, 2], K[1, 2], clip_near, clip_far)
 
     @lazy_property
     def viewsphere_for_embedding(self):
@@ -228,17 +228,15 @@ class Dataset(object):
             # start_time = time.time()
             z = - float(kw['radius']) / 1000.0
             R = transform.random_rotation_matrix()[:3,:3]
-            bgr_x, depth_x = self.renderer.render(R, z, random_light = True)
-            bgr_y, depth_y = self.renderer.render(R, z, random_light = False)
+            bgr_y, depth_y, bgr_x, depth_x = self.renderer.render(R, z)
 
-            ys, xs = np.nonzero(depth_x > 0)
+            ys, xs = np.nonzero(depth_y > 0)
 
             try:
                 obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
             except ValueError as e:
                 print('Object in Rendering not visible.')
                 break
-
 
             x, y, w, h = obj_bb
 
@@ -250,10 +248,6 @@ class Dataset(object):
             bgr_x = self.extract_square_patch(bgr_x, obj_bb_off, pad_factor,resize=(W,H),interpolation = cv2.INTER_NEAREST)
             depth_x = self.extract_square_patch(depth_x, obj_bb_off, pad_factor,resize=(W,H),interpolation = cv2.INTER_NEAREST)
             mask_x = depth_x == 0.
-
-
-            ys, xs = np.nonzero(depth_y > 0)
-            obj_bb = view_sampler.calc_2d_bbox(xs, ys, render_dims)
 
             bgr_y = self.extract_square_patch(bgr_y, obj_bb, pad_factor,resize=(W,H),interpolation = cv2.INTER_NEAREST)
 
@@ -429,11 +423,11 @@ class Dataset(object):
         batch_x, masks, batch_y = self.train_x[rand_idcs], self.mask_x[rand_idcs], self.train_y[rand_idcs]
         rand_vocs = self.bg_imgs[rand_idcs_bg]
 
-        if eval(self._kw['realistic_occlusion']):
-            masks = self.augment_occlusion_mask(masks.copy(),max_occl=np.float(self._kw['realistic_occlusion']))
+        # if eval(self._kw['realistic_occlusion']):
+        #     masks = self.augment_occlusion_mask(masks.copy(),max_occl=np.float(self._kw['realistic_occlusion']))
 
-        if eval(self._kw['square_occlusion']):
-            masks = self.augment_squares(masks.copy(),rand_idcs,max_occl=np.float(self._kw['square_occlusion']))
+        # if eval(self._kw['square_occlusion']):
+        #     masks = self.augment_squares(masks.copy(),rand_idcs,max_occl=np.float(self._kw['square_occlusion']))
 
         batch_x[masks] = rand_vocs[masks]
 
