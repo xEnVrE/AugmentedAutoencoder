@@ -214,7 +214,7 @@ class Dataset(object):
         max_rel_offset = float(kw['max_rel_offset'])
         t = np.array([0, 0, float(kw['radius'])])
 
-        widgets = ['Train images rendering: ', progressbar.Percentage(),
+        widgets = ['Render training images: ', progressbar.Percentage(),
              ' ', progressbar.Bar(),
              ' ', progressbar.Counter(), ' / %s' % self.noof_training_imgs,
              ' ', progressbar.ETA(), ' ']
@@ -224,7 +224,7 @@ class Dataset(object):
         for i in np.arange(self.noof_training_imgs):
             bar.update(i)
 
-            # print '%s/%s' % (i,self.noof_training_imgs)
+            print("Image " + str(i) + " / " + str(self.noof_training_imgs))
             # start_time = time.time()
             z = - float(kw['radius']) / 1000.0
             R = transform.random_rotation_matrix()[:3,:3]
