@@ -31,6 +31,7 @@ class Renderer():
         # Create and insert the light
         self.light = pyrender.DirectionalLight(color = numpy.ones(3), intensity = 0.0)
         self.scene.add(self.light)
+        self.light_color_var = 0.8
 
         # Create and insert a node for the object
         self.mesh_node = pyrender.Node(mesh = mesh, matrix = numpy.eye(4))
@@ -48,9 +49,9 @@ class Renderer():
         # Create a renderer
         self.renderer = pyrender.OffscreenRenderer(camera_width, camera_height)
 
-        self.random_z_probability = 0.7
-        self.number_other_objects = 3
-        self.other_objects_probability = 0.7
+        self.random_z_probability = 0.5
+        self.number_other_objects = 2
+        self.other_objects_probability = 0.5
 
     def render(self, R, z):
         # Always reset poses of other objects
@@ -63,25 +64,28 @@ class Renderer():
         object_pose[0:3, 0:3] = R
         self.scene.set_pose(self.mesh_node, object_pose)
 
-        # Set default light intensity
-        intensity = 40.0
-        self.light.intensity = intensity
+        # Set default light intensity and color
+        self.light.color = numpy.ones(3)
+        self.light.intensity = 40.0
 
         # Render the scene
         render_rgb, render_depth = self.renderer.render(self.scene)
         render_rgb = cv2.cvtColor(render_rgb, cv2.COLOR_RGB2BGR)
 
-        # Render the augmented scene
-
         # Sample random z
         if numpy.random.random() < self.random_z_probability:
-            scaler = numpy.random.uniform(0.8, 1.2)
+            scaler = numpy.random.uniform(0.9, 1.1)
             z = z / scaler
         object_pose[2, 3] = z
         self.scene.set_pose(self.mesh_node, object_pose)
 
         # Sample random light intensity
-        self.light.intensity = numpy.random.uniform(0.1, 1.0) * 80.0
+        self.light.intensity = numpy.random.uniform(0.1, 1.0) * 100.0
+
+        # Sample random light color
+        self.light.color = numpy.array([numpy.random.uniform(1 - self.light_color_var, 1 + self.light_color_var),
+                                        numpy.random.uniform(1 - self.light_color_var, 1 + self.light_color_var),
+                                        numpy.random.uniform(1 - self.light_color_var, 1 + self.light_color_var)])
 
         # Render the other objects
         if numpy.random.random() < self.other_objects_probability:
@@ -94,22 +98,25 @@ class Renderer():
                 pose[0:3, 0:3] = rotation
 
                 # Sample random position
-                offset_x = 0.1
+                offset_x = 0.08 + random.uniform(-0.05, 0.0)
                 if numpy.random.random() < 0.5:
-                    offset_x = -0.1
+                    offset_x = -0.08 + random.uniform(0.0, 0.05)
 
-                offset_y = 0.1
+                offset_y = 0.08 + random.uniform(-0.05, 0.0)
                 if numpy.random.random() < 0.5:
-                    offset_y = -0.1
+                    offset_y = -0.08 + random.uniform(0.0, 0.05)
 
-                if is_in_center:
-                    offset_x = 0
-                    offset_y = 0
-                    is_in_center = False
+                x = offset_x
+                y = offset_y
 
-                pose[0, 3] = offset_x + random.uniform(-0.05, 0.05)
-                pose[1, 3] = offset_y + random.uniform(-0.05, 0.05)
-                pose[2, 3] = z + 0.05 + random.uniform(0.0, 0.05)
+                # if is_in_center:
+                #     x = 0
+                #     y = 0
+                #     is_in_center = False
+
+                pose[0, 3] = x
+                pose[1, 3] = y
+                pose[2, 3] = z + random.uniform(0.0, 0.03)
 
                 self.scene.set_pose(self.other_mesh_nodes[i], pose)
 
